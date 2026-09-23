@@ -13,6 +13,7 @@ COPY --from=builder /install /usr/local
 WORKDIR /app
 COPY --chown=echominer:echominer apps/api/echominer ./echominer
 COPY --chown=echominer:echominer apps/api/alembic ./alembic
+COPY --chown=echominer:echominer apps/web/public/brand/*-240w.png ./echominer/brand/
 COPY --chown=echominer:echominer apps/api/alembic.ini ./alembic.ini
 USER echominer
 EXPOSE 8000

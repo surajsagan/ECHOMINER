@@ -28,7 +28,19 @@ TEAL = "0F9E8E"
 MIST = "EEF4F7"
 LINE = "D3E1E8"
 
-BRAND_DIR = Path(__file__).resolve().parents[4] / "apps" / "web" / "public" / "brand"
+
+
+def _brand_dir() -> Path:
+    """Logo location. The Docker image ships them in echominer/brand; a source
+    checkout reads them from the web app's public folder."""
+    here = Path(__file__).resolve()
+    candidates = [here.parents[1] / "brand"]
+    if len(here.parents) > 4:
+        candidates.append(here.parents[4] / "apps" / "web" / "public" / "brand")
+    return next((c for c in candidates if c.is_dir()), candidates[0])
+
+
+BRAND_DIR = _brand_dir()
 
 AGREEMENT_TEXT = [
     "EchoMiner was developed at JSS Academy of Higher Education and Research (JSS AHER), Mysore.",

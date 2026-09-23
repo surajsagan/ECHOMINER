@@ -70,3 +70,18 @@ def test_page_cap_enforced(tmp_path):
     path = tmp_path / "many.pdf"; doc.save(path); doc.close()
     with pytest.raises(DocumentTooLarge):
         ValidatedPipelineEngine(max_pages=2).extract(path)
+
+
+def test_export_module_imports_in_shallow_container_layout(tmp_path):
+    """Regression: the API image puts the package at /app/echominer, only four
+    directories deep. A hard-coded parents[4] lookup crashed the import."""
+    import shutil
+    import subprocess
+    import sys
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "echominer"
+    root = tmp_path / "app"
+    shutil.copytree(src, root / "echominer", ignore=shutil.ignore_patterns("__pycache__"))
+    code = "import echominer.adapters.export as e; print(e.BRAND_DIR)"
+    r = subprocess.run([sys.executable, "-c", code], cwd=root, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
