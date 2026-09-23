@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Palette is pinned by the brief: blue, teal, white, minimal, professional.
+  Where the brief left room, the choices come from the subject -- echocardiography
+  is a waveform-and-number discipline, so numerics carry the identity: every
+  measurement, unit, version string and timestamp is set in mono.
+*/
+:root {
+  --em-ink: #08202e;
+  --em-deep: #0e4c6b;
+  --em-teal: #0f9e8e;
+  --em-mist: #eef4f7;
+  --em-line: #d3e1e8;
+  --em-alert: #b03a18;
+  --em-paper: #ffffff;
+  --em-muted: #4d6b7c;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+.dark {
+  --em-ink: #e6f0f4;
+  --em-deep: #4aa3c9;
+  --em-teal: #2bc0ae;
+  --em-mist: #0c1a22;
+  --em-line: #1b3140;
+  --em-alert: #e4703f;
+  --em-paper: #061219;
+  --em-muted: #8fadbd;
+}
+
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+
+body {
+  background: var(--em-paper);
+  color: var(--em-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible focus everywhere; never removed. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--em-teal);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* The signature motif: a Doppler spectral envelope that draws once on load and
+   returns, quietened, as the section divider. */
+.trace-draw {
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  animation: trace 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes trace { to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .trace-draw { animation: none; stroke-dashoffset: 0; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.section { scroll-margin-top: 5rem; }

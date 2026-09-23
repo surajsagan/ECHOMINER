@@ -1,0 +1,92 @@
+# EchoMiner production stack -- one Oracle Cloud Always Free ARM VM.
+# Run from the repo root:  docker compose -f infra/compose/docker-compose.yml --env-file .env.deploy up -d
+name: echominer
+
+x-api-env: &api-env
+  env_file: [../../apps/api/.env]
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-echominer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.deploy}
+      POSTGRES_DB: ${POSTGRES_DB:-echominer}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-echominer}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy: { resources: { limits: { memory: 2G } } }
+
+  # One-shot: applies Alembic migrations, then exits. api/worker wait for it.
+  migrate:
+    <<: *api-env
+    image: echominer-api:latest
+    build: { context: ../.., dockerfile: infra/docker/api.Dockerfile }
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    <<: *api-env
+    image: echominer-api:latest
+    restart: unless-stopped
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    # The spool is SHARED with the worker: the API writes uploads, the worker
+    # reads them, and either side purges. It is RAM-backed, so uploaded PDFs
+    # never reach the block volume and vanish on reboot.
+    volumes: [spool:/var/echominer/spool]
+    security_opt: ["no-new-privileges:true"]
+    deploy: { resources: { limits: { memory: 1G } } }
+
+  worker:
+    <<: *api-env
+    image: echominer-api:latest
+    restart: unless-stopped
+    command: ["python", "-m", "echominer.worker"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    volumes: [spool:/var/echominer/spool]
+    tmpfs: ["/tmp:size=256m"]
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    healthcheck: { disable: true }
+    deploy: { resources: { limits: { memory: 3G } } }
+
+  web:
+    image: echominer-web:latest
+    build:
+      context: ../..
+      dockerfile: infra/docker/web.Dockerfile
+      args:
+        NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${NEXT_PUBLIC_RECAPTCHA_SITE_KEY:-}
+        NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+    restart: unless-stopped
+    depends_on: [api]
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ../nginx:/etc/nginx/conf.d:ro
+      # Cloudflare Origin Certificate (origin.pem + origin.key), placed by you on the server.
+      - /etc/echominer/certs:/etc/nginx/certs:ro
+    depends_on: [api, web]
+    deploy: { resources: { limits: { memory: 128M } } }
+
+volumes:
+  pgdata:
+  spool:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "size=1g,mode=1777"
