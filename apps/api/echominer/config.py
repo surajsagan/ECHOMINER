@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     max_job_bytes: int = 200 * 1024 * 1024
     max_pages_per_file: int = 2000
 
+    # --- staging ----------------------------------------------------------
+    # RAM-backed volume shared by api and worker in production (docker-compose).
+    spool_dir: str = "/var/echominer/spool"
+
     # --- retention ------------------------------------------------------
     artefact_ttl_seconds: int = 2 * 3600
 

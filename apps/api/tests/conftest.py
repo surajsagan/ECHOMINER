@@ -1,4 +1,4 @@
-import os, sys, pathlib
+import os, sys, pathlib, tempfile
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 os.environ.update({
     "ENV": "test",
@@ -7,6 +7,8 @@ os.environ.update({
     "CAPTCHA_PROVIDER": "null",
     "SECRET_KEY": "test-secret-key",
     "OTP_PEPPER": "test-pepper",
+    # Uploads are staged in a throwaway folder, not /var (not writable on CI runners).
+    "SPOOL_DIR": tempfile.mkdtemp(prefix="echominer-spool-"),
 })
 
 import pytest

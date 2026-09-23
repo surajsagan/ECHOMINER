@@ -52,7 +52,7 @@ class JobService:
                  engine: ValidatedPipelineEngine | None = None):
         self.db = db
         self.settings = settings
-        self.spool = spool or LocalSpool()
+        self.spool = spool or LocalSpool(settings.spool_dir)
         self.engine = engine or ValidatedPipelineEngine(max_pages=settings.max_pages_per_file)
 
     # -- validation ------------------------------------------------------
