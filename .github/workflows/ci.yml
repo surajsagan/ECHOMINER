@@ -48,6 +48,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npx tsc --noEmit
       - run: npm run build
+      - name: Static export build (single-service hosting)
+        run: NEXT_OUTPUT=export npm run build && test -f out/index.html && test -f out/admin/index.html
       - run: npm audit --omit=dev --audit-level=high
 
   images:
@@ -58,6 +60,10 @@ jobs:
         run: docker build -f infra/docker/api.Dockerfile -t echominer-api:ci .
       - name: Build web image
         run: docker build -f infra/docker/web.Dockerfile -t echominer-web:ci .
+      - name: Build single-service (Render) image
+        run: docker build -f infra/docker/render.Dockerfile -t echominer-render:ci .
+      - name: Render image has the site, logos and migrations
+        run: docker run --rm echominer-render:ci sh -c "test -f static/index.html && test -f static/admin/index.html && ls echominer/brand/*.png && test -f alembic.ini && python -c 'import echominer.main, echominer.worker, fitz, pandas, PIL'"
       - name: API image imports and migrations are packaged
         run: docker run --rm echominer-api:ci sh -c "python -c 'import echominer.main, echominer.worker, fitz, pandas' && test -f alembic.ini && alembic --help >/dev/null"
       - name: nginx config is valid

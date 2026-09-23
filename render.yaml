@@ -1,0 +1,64 @@
+# Render Blueprint -- card-free hosting on Render's free plan.
+# Guide: docs/DEPLOY_RENDER.md.  Values marked `sync: false` are asked for when
+# the Blueprint is created in the Render dashboard; nothing secret is stored here.
+services:
+  - type: web
+    name: echominer
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./infra/docker/render.Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    # Deploy only after GitHub Actions CI is green.
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: ENV
+        value: prod
+      - key: PUBLIC_BASE_URL
+        value: https://echominer.in
+      - key: DATABASE_URL          # Neon connection string
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: OTP_PEPPER
+        generateValue: true
+      # 512 MB instance: keep jobs small. Keep these in step with NEXT_PUBLIC_* below.
+      - key: MAX_FILES_PER_JOB
+        value: "5"
+      - key: MAX_JOB_BYTES
+        value: "52428800"
+      - key: NEXT_PUBLIC_MAX_FILES
+        value: "5"
+      - key: NEXT_PUBLIC_MAX_UPLOAD_MB
+        value: "50"
+      # New jobs wake the worker instantly, so idle polling only needs to catch
+      # jobs left over from a restart. Slow polling lets Neon (scale-to-zero)
+      # sleep: even if Render never sleeps, compute stays within the free
+      # 100 CU-hours/month (~1/3 of the month awake at 0.25 CU = ~60 CU-hours).
+      - key: WORKER_POLL_SECONDS
+        value: "900"
+      - key: PURGE_INTERVAL_SECONDS
+        value: "1800"
+      # Render's free plan blocks SMTP ports; send through Brevo's HTTPS API.
+      - key: MAIL_PROVIDER
+        value: brevo_api
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        value: noreply@echominer.in
+      - key: MAIL_REPLY_TO
+        value: aiechominer@gmail.com
+      - key: REGISTRATION_NOTIFY
+        value: surajbm@jssuni.edu.in,madhub@jssuni.edu.in,aiechominer@gmail.com
+      - key: CAPTCHA_PROVIDER
+        value: recaptcha
+      - key: RECAPTCHA_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+        sync: false
+      # First administrator. Remove both after the first successful start.
+      - key: ADMIN_BOOTSTRAP_EMAIL
+        sync: false
+      - key: ADMIN_BOOTSTRAP_PASSWORD
+        sync: false

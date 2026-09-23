@@ -38,7 +38,7 @@ These become Quality-sheet notes. Nothing is filtered, corrected, or dropped.
 cd apps/api
 pip install -e ".[dev]"
 cp .env.example .env          # fill SECRET_KEY and OTP_PEPPER: openssl rand -hex 32
-pytest -q                     # 41 tests
+pytest -q                     # 53 tests
 uvicorn echominer.main:app --reload
 ```
 
@@ -47,7 +47,12 @@ SQLite if `DATABASE_URL` points at one. Nothing leaves the machine.
 
 ## Deploy
 
-Oracle Cloud Always Free ARM VM behind Cloudflare, Brevo for mail. Step-by-step:
+Two supported targets:
+
+- **Card-free:** Render free web service + Neon Postgres + Cloudflare — one process serves the
+  website, API and extraction worker. Step-by-step: **[`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md)**
+  (`render.yaml` Blueprint, `infra/docker/render.Dockerfile`).
+- **Any Ubuntu VM** (Oracle Cloud Always Free, or an institutional server) behind Cloudflare, Brevo for mail. Step-by-step:
 **[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)** (GoDaddy → Cloudflare DNS, Oracle VM, certificates, secrets,
 first deploy, automatic deploys, backups, launch checklist, local development).
 

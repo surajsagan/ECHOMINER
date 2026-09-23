@@ -1,6 +1,10 @@
 # EchoMiner — Deployment Runbook
 
 Takes the code in this repository to a live, HTTPS site at **https://echominer.in**.
+
+> **No credit card?** Oracle Cloud needs one. Use the card-free set-up instead:
+> [`DEPLOY_RENDER.md`](DEPLOY_RENDER.md) (Render + Neon + Cloudflare). This guide remains the
+> reference for any Ubuntu VM, including an institutional server.
 Total cost: ₹0 per month (domain renewal at GoDaddy aside).
 
 ```

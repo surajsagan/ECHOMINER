@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { SITE } from "@/lib/site";
+import { LIMITS, SITE } from "@/lib/site";
 
 /**
  * The hero thesis is the artefact itself: a Doppler spectral envelope that draws
@@ -38,7 +38,7 @@ export function Hero() {
           </div>
           <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-line pt-6">
             {[
-              ["20", "PDFs per batch"],
+              [String(LIMITS.maxFiles), "PDFs per batch"],
               ["47", "fields per report"],
               ["0", "files kept after download"],
             ].map(([value, label]) => (

@@ -6,9 +6,12 @@ DMARC on the domain. No mailbox is created; replies are routed by Reply-To.
 import logging
 import smtplib
 import uuid
+from html import escape
 from email.message import EmailMessage
 from email.utils import formataddr
 from typing import Sequence
+
+import httpx
 from ..config import Settings
 
 log = logging.getLogger(__name__)
@@ -58,5 +61,41 @@ class SmtpMailer:
         return msg.get("Message-ID", "smtp-sent")
 
 
+class BrevoApiMailer:
+    """Brevo transactional email over HTTPS (port 443). Used where outbound SMTP
+    ports are blocked. Same DNS authentication as the SMTP relay."""
+
+    URL = "https://api.brevo.com/v3/smtp/email"
+
+    def __init__(self, settings: Settings, client: httpx.Client | None = None):
+        if not settings.brevo_api_key:
+            raise ValueError("MAIL_PROVIDER=brevo_api needs BREVO_API_KEY")
+        self.settings = settings
+        self.client = client or httpx.Client(timeout=20)
+
+    def send(self, *, to: Sequence[str], subject: str, text: str, html: str | None = None,
+             template: str = "generic") -> str:
+        s = self.settings
+        body = {
+            "sender": {"name": s.mail_from_name, "email": s.mail_from},
+            "to": [{"email": addr} for addr in to],
+            "replyTo": {"email": s.mail_reply_to},
+            "subject": subject,
+            "textContent": text,
+            # Brevo requires an HTML part; a plain rendering of the text is enough.
+            "htmlContent": html or ("<pre style=\"font-family:inherit;white-space:pre-wrap\">"
+                                    + escape(text) + "</pre>"),
+        }
+        r = self.client.post(self.URL, json=body, headers={"api-key": s.brevo_api_key,
+                                                          "accept": "application/json"})
+        if r.status_code >= 300:
+            raise RuntimeError(f"brevo send failed: HTTP {r.status_code} {r.text[:300]}")
+        return r.json().get("messageId", "brevo-sent")
+
+
 def build_mailer(settings: Settings):
-    return SmtpMailer(settings) if settings.mail_provider == "smtp" else ConsoleMailer(settings)
+    if settings.mail_provider == "smtp":
+        return SmtpMailer(settings)
+    if settings.mail_provider == "brevo_api":
+        return BrevoApiMailer(settings)
+    return ConsoleMailer(settings)

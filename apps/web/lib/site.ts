@@ -1,5 +1,12 @@
 /** Content supplied by the project, rendered verbatim. No figures are invented here. */
 
+/** Upload limits shown to users. Must match the API's MAX_FILES_PER_JOB / MAX_JOB_BYTES;
+ * baked in at build time so a smaller host (Render free tier) can lower them. */
+export const LIMITS = {
+  maxFiles: Number(process.env.NEXT_PUBLIC_MAX_FILES ?? 20),
+  maxMb: Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB ?? 200),
+};
+
 export const SITE = {
   name: "EchoMiner",
   domain: "https://echominer.in",
@@ -121,7 +128,7 @@ export const AGREEMENT_TEXT = [
 export const FEATURES = [
   {
     title: "Batch extraction",
-    body: "Upload up to 20 echocardiography PDFs at once and receive one consolidated workbook.",
+    body: `Upload up to ${LIMITS.maxFiles} echocardiography PDFs at once and receive one consolidated workbook.`,
   },
   {
     title: "Rule-based and reproducible",
@@ -147,7 +154,7 @@ export const FEATURES = [
 
 export const WORKFLOW = [
   { n: "01", title: "Register once", body: "Verify your email with a one-time code. Subsequent visits from the same device skip it." },
-  { n: "02", title: "Upload reports", body: "Drop up to 20 PDF reports. Files are checked before anything is read." },
+  { n: "02", title: "Upload reports", body: `Drop up to ${LIMITS.maxFiles} PDF reports. Files are checked before anything is read.` },
   { n: "03", title: "Extract", body: "The validated pipeline reads each report and maps it to the structured field set." },
   { n: "04", title: "Review", body: "Preview the extracted table and the per-file quality summary in the browser." },
   { n: "05", title: "Download and clear", body: "Take the branded workbook. Your files are removed from the server immediately." },
@@ -156,7 +163,7 @@ export const WORKFLOW = [
 export const FAQS = [
   {
     q: "What file formats can I upload?",
-    a: "PDF only, up to 20 files per submission and 200 MB in total. The PDF must contain a text layer — scanned images without OCR cannot be read.",
+    a: `PDF only, up to ${LIMITS.maxFiles} files per submission and ${LIMITS.maxMb} MB in total. The PDF must contain a text layer — scanned images without OCR cannot be read.`,
   },
   {
     q: "Do I need to verify my email every time?",

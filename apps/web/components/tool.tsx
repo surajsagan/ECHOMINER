@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { api, ApiError, type JobState, type PreviewPage } from "@/lib/api";
-import { AGREEMENT_TEXT, PRIVACY_NOTICE } from "@/lib/site";
+import { AGREEMENT_TEXT, LIMITS, PRIVACY_NOTICE } from "@/lib/site";
 import { captchaToken, preloadCaptcha } from "@/lib/captcha";
 import { Card, Section } from "./primitives";
 
-const MAX_FILES = 20;
-const MAX_BYTES = 200 * 1024 * 1024;
+const MAX_FILES = LIMITS.maxFiles;
+const MAX_BYTES = LIMITS.maxMb * 1024 * 1024;
 
 type Stage = "form" | "signin" | "otp" | "unlocked";
 
@@ -209,7 +209,7 @@ function Workspace({ onSignOut }: { onSignOut: () => void }) {
       setError(`A maximum of ${MAX_FILES} files can be uploaded at once.`);
     }
     if (combined.reduce((sum, f) => sum + f.size, 0) > MAX_BYTES) {
-      setError("Total upload exceeds 200 MB.");
+      setError(`Total upload exceeds ${LIMITS.maxMb} MB.`);
       return;
     }
     setFiles(combined);
@@ -251,7 +251,7 @@ function Workspace({ onSignOut }: { onSignOut: () => void }) {
       <Card>
         <h4 className="font-display text-base font-medium text-ink">Before you upload</h4>
         <ul className="mt-3 space-y-1.5 text-sm text-muted">
-          <li>PDF reports only, up to {MAX_FILES} files and 200 MB per submission.</li>
+          <li>PDF reports only, up to {MAX_FILES} files and {LIMITS.maxMb} MB per submission.</li>
           <li>The PDF must contain a text layer. Scanned images without OCR cannot be read.</li>
           <li>Your files are deleted from the server as soon as your download completes.</li>
         </ul>

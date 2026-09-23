@@ -42,11 +42,27 @@ class Settings(BaseSettings):
     # RAM-backed volume shared by api and worker in production (docker-compose).
     spool_dir: str = "/var/echominer/spool"
 
+    # --- single-service hosting (Render) --------------------------------
+    # Run the extraction worker inside the API process instead of a separate
+    # container, and serve the statically exported website from the API.
+    embedded_worker: bool = False
+    worker_poll_seconds: float = 2.0
+    purge_interval_seconds: int = 300
+    static_dir: str = ""
+    # In-process per-IP rate limits (nginx does this on the VM deployment).
+    app_rate_limit: bool = False
+    # First administrator, created at start-up only if no administrator exists.
+    admin_bootstrap_email: str = ""
+    admin_bootstrap_password: str = ""
+
     # --- retention ------------------------------------------------------
     artefact_ttl_seconds: int = 2 * 3600
 
     # --- mail -----------------------------------------------------------
-    mail_provider: Literal["console", "smtp"] = "console"
+    # smtp: Brevo SMTP relay (VM hosting). brevo_api: Brevo HTTPS API, for hosts
+    # that block outbound SMTP ports (Render free tier).
+    mail_provider: Literal["console", "smtp", "brevo_api"] = "console"
+    brevo_api_key: str = ""
     smtp_host: str = "smtp-relay.brevo.com"
     smtp_port: int = 587
     smtp_user: str = ""
@@ -61,6 +77,17 @@ class Settings(BaseSettings):
     captcha_provider: Literal["null", "recaptcha"] = "null"
     recaptcha_secret: str = ""
     recaptcha_min_score: float = 0.5
+
+    @field_validator("database_url")
+    @classmethod
+    def _psycopg_driver(cls, v: str) -> str:
+        """Hosted Postgres providers (Neon, Render) hand out postgres:// or
+        postgresql:// URLs; SQLAlchemy needs the psycopg 3 driver named."""
+        v = v.strip()
+        for prefix in ("postgres://", "postgresql://"):
+            if v.startswith(prefix):
+                return "postgresql+psycopg://" + v[len(prefix):]
+        return v
 
     @field_validator("registration_notify", "allowed_email_domains")
     @classmethod

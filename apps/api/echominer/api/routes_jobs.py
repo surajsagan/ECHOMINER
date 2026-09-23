@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, 
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from .. import worker
 from ..adapters.export import build_workbook
 from ..citation import all_formats, render
 from ..config import Settings, get_settings
@@ -47,6 +48,9 @@ async def submit_job(request: Request, files: list[UploadFile] = File(...),
         job = service.submit(user_id=user.id, files=incoming, ip=client_ip(request))
     except UploadRejected as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    # Commit before waking the worker, so the job is visible to its session.
+    service.db.commit()
+    worker.notify()
     return {"id": str(job.id), "status": job.status, "file_count": job.file_count}
 
 
