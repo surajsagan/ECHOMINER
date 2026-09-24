@@ -5,7 +5,13 @@
 export const LIMITS = {
   maxFiles: Number(process.env.NEXT_PUBLIC_MAX_FILES ?? 20),
   maxMb: Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB ?? 200),
+  /** Total pages per submission; 0 means no limit is shown. */
+  maxPages: Number(process.env.NEXT_PUBLIC_MAX_PAGES ?? 0),
 };
+
+const pagesNote = LIMITS.maxPages
+  ? ` Up to ${LIMITS.maxPages.toLocaleString("en-IN")} pages per submission — a quarterly archive usually fits in one.`
+  : "";
 
 export const SITE = {
   name: "EchoMiner",
@@ -163,7 +169,7 @@ export const WORKFLOW = [
 export const FAQS = [
   {
     q: "What file formats can I upload?",
-    a: `PDF only, up to ${LIMITS.maxFiles} files per submission and ${LIMITS.maxMb} MB in total. The PDF must contain a text layer — scanned images without OCR cannot be read.`,
+    a: `PDF only, up to ${LIMITS.maxFiles} files per submission and ${LIMITS.maxMb} MB in total.${pagesNote} The PDF must contain a text layer — scanned images without OCR cannot be read.`,
   },
   {
     q: "Do I need to verify my email every time?",

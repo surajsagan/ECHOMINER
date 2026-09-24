@@ -36,7 +36,10 @@ class Settings(BaseSettings):
     # --- upload limits (ruling: 20 files) --------------------------------
     max_files_per_job: int = 20
     max_job_bytes: int = 200 * 1024 * 1024
-    max_pages_per_file: int = 2000
+    max_pages_per_file: int = 20000
+    # Total pages across all files in one submission; 0 = no limit. Bounds peak
+    # memory on small hosts (Render free, 512 MB: ~10,000 pages measured safe).
+    max_pages_per_job: int = 0
 
     # --- staging ----------------------------------------------------------
     # RAM-backed volume shared by api and worker in production (docker-compose).

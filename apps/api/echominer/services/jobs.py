@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Sequence
 
+import pymupdf
+
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -76,6 +78,29 @@ class JobService:
                 if marker in head:
                     raise UploadRejected(
                         f"{f.filename}: contains active content ({marker.decode()}) and was rejected")
+
+        # Page counts are read from the PDF structure only (no text extraction),
+        # so this check is cheap even for very large archives.
+        pages: list[tuple[str, int]] = []
+        for f in files:
+            try:
+                with pymupdf.open(stream=f.content, filetype="pdf") as doc:
+                    pages.append((f.filename, doc.page_count))
+            except Exception:
+                raise UploadRejected(f"{f.filename}: the PDF could not be opened")
+        per_file = self.settings.max_pages_per_file
+        for name, n in pages:
+            if per_file and n > per_file:
+                raise UploadRejected(
+                    f"{name} has {n:,} pages; the limit is {per_file:,} pages per file. "
+                    "Split it into smaller PDFs and upload them separately.")
+        per_job = self.settings.max_pages_per_job
+        total_pages = sum(n for _, n in pages)
+        if per_job and total_pages > per_job:
+            raise UploadRejected(
+                f"these files have {total_pages:,} pages in total; this server accepts up to "
+                f"{per_job:,} pages per submission. Upload fewer files at a time "
+                "(for example one quarterly archive per submission).")
 
     # -- submission ------------------------------------------------------
     def submit(self, *, user_id, files: Sequence[IncomingFile], ip: str | None = None) -> ExtractionJob:

@@ -252,6 +252,12 @@ function Workspace({ onSignOut }: { onSignOut: () => void }) {
         <h4 className="font-display text-base font-medium text-ink">Before you upload</h4>
         <ul className="mt-3 space-y-1.5 text-sm text-muted">
           <li>PDF reports only, up to {MAX_FILES} files and {LIMITS.maxMb} MB per submission.</li>
+            {LIMITS.maxPages > 0 && (
+              <li>
+                Up to {LIMITS.maxPages.toLocaleString("en-IN")} pages in total per submission. For larger
+                archives, upload one file at a time.
+              </li>
+            )}
           <li>The PDF must contain a text layer. Scanned images without OCR cannot be read.</li>
           <li>Your files are deleted from the server as soon as your download completes.</li>
         </ul>

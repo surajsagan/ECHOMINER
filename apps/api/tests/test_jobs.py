@@ -189,3 +189,31 @@ def test_export_is_deterministic():
     first, second = build_workbook(**args), build_workbook(**args)
     wb1, wb2 = load_workbook(io.BytesIO(first)), load_workbook(io.BytesIO(second))
     assert [[c.value for c in r] for r in wb1["Data"]] == [[c.value for c in r] for r in wb2["Data"]]
+
+
+def _multi_page_pdf(pages):
+    doc = pymupdf.open()
+    for i in range(pages):
+        doc.new_page().insert_text((40, 50), REPORT if i == 0 else f"page {i}", fontsize=8)
+    buf = io.BytesIO(); doc.save(buf); doc.close()
+    return buf.getvalue()
+
+
+def test_page_limits_reject_oversized_submissions_before_processing(client, mailer, monkeypatch):
+    from echominer.config import get_settings
+    settings = get_settings()
+    monkeypatch.setattr(settings, "max_pages_per_file", 5)
+    monkeypatch.setattr(settings, "max_pages_per_job", 8)
+    sign_in(client, mailer, "pages@example.org")
+
+    r = client.post("/api/v1/jobs", files=[("files", ("big.pdf", _multi_page_pdf(6), "application/pdf"))])
+    assert r.status_code == 400 and "6 pages; the limit is 5 pages per file" in r.json()["detail"]
+
+    two = [("files", (f"q{i}.pdf", _multi_page_pdf(5), "application/pdf")) for i in range(2)]
+    r = client.post("/api/v1/jobs", files=two)
+    assert r.status_code == 400 and "10 pages in total" in r.json()["detail"]
+    assert "8 pages per submission" in r.json()["detail"]
+
+    ok = [("files", (f"q{i}.pdf", _multi_page_pdf(4), "application/pdf")) for i in range(2)]
+    assert client.post("/api/v1/jobs", files=ok).status_code == 202
+    drain()

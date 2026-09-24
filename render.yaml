@@ -32,6 +32,14 @@ services:
         value: "5"
       - key: NEXT_PUBLIC_MAX_UPLOAD_MB
         value: "50"
+      # Page limits: measured peak memory ~390 MB for 9,200 pages in one job and
+      # ~600 MB (over the 512 MB limit) for 23,000. 10,000 keeps a safe margin.
+      - key: MAX_PAGES_PER_FILE
+        value: "10000"
+      - key: MAX_PAGES_PER_JOB
+        value: "10000"
+      - key: NEXT_PUBLIC_MAX_PAGES
+        value: "10000"
       # New jobs wake the worker instantly, so idle polling only needs to catch
       # jobs left over from a restart. Slow polling lets Neon (scale-to-zero)
       # sleep: even if Render never sleeps, compute stays within the free
